@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Echoes of Space</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{--bg:#070b1a;--card:#111936;--ink:#e8ecff;--mut:#98a2d0;--acc:#ffb347;--line:#243060;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#16224d,var(--bg) 60%);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:760px;margin:auto;padding:16px}
+h1{font-size:1.7rem;margin:.2em 0}.tag{color:var(--acc);font-style:italic;margin:0 0 14px}
+.zones{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+button.on{border-color:var(--acc);background:#2a2340}
+.zones button{font-size:1.05rem;padding:14px 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.obj{text-align:left}.obj b{display:block}.obj small{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.row button{padding:7px 12px;border-radius:99px;font-size:.9rem}
+.back{background:none;border:none;color:var(--mut);padding:4px 0}
+.say{border-left:3px solid var(--acc);padding-left:12px;margin:10px 0}
+#log{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.u{align-self:flex-end;background:#26336e;border-radius:12px;padding:8px 12px;max-width:85%}
+.r{align-self:flex-start;background:#1b2350;border-radius:12px;padding:8px 12px;max-width:90%}
+.in{display:flex;gap:6px;margin-top:10px}.in input{flex:1;min-width:0;font:inherit;background:#0b1230;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px}
+.bar{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .8s}
+.step{opacity:.4;transition:.4s}.step.on{opacity:1;color:var(--acc)}
+.relic{border:2px dashed var(--acc);text-align:center}
+.foot{color:var(--mut);font-size:.8rem;text-align:center;margin:24px 0}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;touch-action:none;display:block}
+main{position:relative;z-index:1;pointer-events:none}main>*{pointer-events:auto}
+#stage{height:50vh;pointer-events:none;display:flex;align-items:flex-end}
+.hud{color:var(--acc);text-shadow:0 1px 6px #000;font-size:.9rem;padding-bottom:6px}
+.sp{height:44vh;pointer-events:none}
+.panel{background:rgba(7,11,26,.88);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:16px;padding:14px 14px 230px}
+.chip{position:fixed;z-index:3;display:none;transform:translate(-50%,-140%);white-space:nowrap;font-size:.8rem;padding:5px 9px;border-radius:99px;background:rgba(17,25,54,.88);border:1px solid var(--acc);cursor:pointer}
+.zones{grid-template-columns:repeat(4,1fr)}.zones button{font-size:.85rem;padding:10px 2px}
+h1,.tag{text-shadow:0 2px 8px #000}
+select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px}
+#dock{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:30px 12px calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,rgba(5,8,22,.96) 30%)}
+#sub{text-align:center;font-size:1.2rem;line-height:1.35;min-height:3.6em;max-height:26vh;overflow:auto;text-shadow:0 1px 5px #000;cursor:pointer}
+#sub small{display:block;color:var(--acc);letter-spacing:.14em;text-transform:uppercase;font-size:.68rem;margin-bottom:2px}
+#sub span{opacity:.4;transition:opacity .15s}#sub span.hot{opacity:1;color:#fff}
+#dock .row{justify-content:center;margin:4px 0}
+#tb{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:linear-gradient(rgba(5,8,22,.92),transparent)}
+#tb b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tb select,#tb button{padding:6px 10px;font-size:.85rem}
+#tb .r2{display:flex;gap:6px;width:100%}#tb .r2 select{flex:1;min-width:0}
+#gm{position:fixed;inset:0;z-index:20;background:radial-gradient(ellipse at top,#16224d,#070b1a 60%);overflow:auto;display:none;padding-top:env(safe-area-inset-top,0px)}
+.gh{display:flex;gap:10px;align-items:center;padding:10px 12px}.gh b{flex:1}.gh span{font-size:.8rem;color:var(--acc)}
+.gb{padding:0 12px 28px;max-width:760px;margin:auto}#gm canvas{width:100%;background:#050816;border-radius:12px;display:block;touch-action:none}
+.ctl{display:flex;gap:8px;margin:10px 0}.ctl button{flex:1;padding:16px 4px;font-size:.95rem;user-select:none;-webkit-user-select:none;touch-action:none}
+#fade{position:fixed;inset:0;background:#000;z-index:6;opacity:0;pointer-events:none;transition:opacity .35s}
+#warp{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 0deg at 50% 42%,rgba(150,185,255,0) 0 2deg,rgba(170,200,255,.4) 2.3deg 2.7deg);-webkit-mask:radial-gradient(circle at 50% 42%,transparent 12%,#000 80%);mask:radial-gradient(circle at 50% 42%,transparent 12%,#000 80%)}
+#cap{position:fixed;left:0;right:0;top:42%;z-index:4;text-align:center;pointer-events:none;opacity:0;transition:opacity .5s;letter-spacing:.2em;text-transform:uppercase;font-size:.85rem;color:#cfe0ff;text-shadow:0 0 12px #5a8cff}
+</style></head><body><main id="app"></main>
+<script>
+/* ---- Echoes of Space: GitHub Pages config ----
+   1) Leaderboard: fill in your free Supabase project (see supabase.sql and README).
+   2) AI: the Claude viewer's AI is not available here, so calls go to Gemini with a key
+      the user pastes once (kept only in that browser). UNTESTED against the live Gemini API. */
+window.EOS_SUPABASE={url:"",key:""};
+if(!window.claude){window.claude={use:async n=>{if(n!=="sample")return null;
+return async(m,o)=>{let key="";try{key=localStorage.getItem("eos_gk")||""}catch(e){}
+if(!key)key=prompt("Paste your free Gemini API key (kept only in this browser):")||"";
+if(!key)throw new Error("no-key");try{localStorage.setItem("eos_gk",key)}catch(e){}
+const txt=typeof m==="string"?m:m.map(x=>x.content).join("\n");
+const r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify({contents:[{parts:[{text:txt}]}]})});
+if(!r.ok)throw new Error("gemini-"+r.status);const j=await r.json();
+const t=((j.candidates||[])[0]||{}).content;return{text:t&&t.parts?t.parts.map(p=>p.text||"").join(""):""}}}}}
+</script>
+<script>
+const D=[
+{id:"soj",z:"Mars",n:"Sojourner Rover",e:"🛞",y:"1996–1997",
+ P:["I was built by NASA's Jet Propulsion Laboratory as a small rover for the Mars Pathfinder mission. I launched on 4 December 1996 to test whether a tiny wheeled robot could explore another planet.","I landed with Pathfinder on 4 July 1997. I was planned to work 7 sols but kept going for about 83. I studied rocks with my alpha-proton X-ray spectrometer.","I am still on Mars, silent. Pathfinder's last transmission came in September 1997. My legacy: every later Mars rover descends from my design."],
+ C:[["Rocker-bogie wheels","Six wheels on a pivoting suspension let me climb over rocks without tipping. NASA reused this design on every Mars rover since."],["Solar panel","A solar panel on my top powered me during the day."],["APXS spectrometer","It measured which elements are in rocks and soil."],["Cameras","Front and rear cameras helped Earth operators steer me."]],
+ R:["Launch from Earth, Dec 1996","Cruise to Mars","Airbag landing, 4 Jul 1997","First drive down the ramp","Rock chemistry measured","Last contact, Sep 1997"]},
+{id:"spi",z:"Mars",n:"Spirit Rover",e:"🔭",y:"2003–2010",
+ P:["I am one of two Mars Exploration Rovers built by NASA/JPL. I launched on 10 June 2003 to look for signs that Mars once had water.","I landed in Gusev Crater on 4 January 2004. My mission was planned for 90 sols but I worked for years. I found silica-rich deposits that point to past water.","In 2009 I got stuck in soft sand. NASA's last contact with me was in March 2010. I stay at Gusev Crater."],
+ C:[["Rocker-bogie suspension","Keeps all six wheels on the ground over rough terrain."],["Solar panels","Power me, but dust and winter reduce the energy."],["Pancam and Navcam","Colour and navigation cameras, my eyes."],["Rock Abrasion Tool","A grinder that exposes fresh rock beneath the dusty surface."]],
+ R:["Launch, Jun 2003","Journey to Mars","Landing in Gusev, Jan 2004","First drive","Water clues found","Stuck in sand, silence in 2010"]},
+{id:"opp",z:"Mars",n:"Opportunity Rover",e:"🌅",y:"2003–2019",
+ P:["I am Spirit's twin, built by NASA/JPL. I launched on 7 July 2003 to hunt for evidence of past water on Mars.","I landed at Meridiani Planum on 25 January 2004. I found minerals that formed in water, and I drove roughly 45 km, far beyond my 90-sol plan.","A huge dust storm blocked my sunlight in June 2018. I never woke up again, and NASA declared my mission complete in February 2019."],
+ C:[["Wheels","Aluminium wheels with cleats grip sand and rock."],["Solar arrays","Convert sunlight to power for my batteries."],["Lithium-ion batteries","Store energy for the cold Martian night."],["High-gain antenna","Sends data straight to Earth; I also relayed through orbiters."]],
+ R:["Launch, Jul 2003","Cruise","Landing, Jan 2004","First drive","Water minerals discovered","Dust storm 2018, mission ends"]},
+{id:"vik",z:"Mars",n:"Viking 1 Lander",e:"🛰️",y:"1975–1982",
+ P:["I was built by NASA to search for signs of life on Mars. I launched on 20 August 1975 together with an orbiter.","I touched down on Chryse Planitia on 20 July 1976. I sent back colour pictures, weather data and ran experiments on soil for microbes. The results were puzzling and debated.","I kept working until November 1982, then my contact ended after a bad command. I am still where I landed."],
+ C:[["Nuclear power (RTG)","Radioisotope generators gave steady power regardless of dust."],["Robotic sampler arm","Scooped soil for my biology experiments."],["Biology lab","Three experiments looked for signs of metabolism in soil."],["Cameras","Took the first long-term surface images of Mars."]],
+ R:["Launch, Aug 1975","Orbit of Mars","Landing, Jul 1976","First soil sampling","Biology tests","Contact ends, Nov 1982"]},
+{id:"sur",z:"Moon",n:"Surveyor 3",e:"🦵",y:"1967–1969",
+ P:["I was built to test landing on the Moon before astronauts went. I launched on 17 April 1967.","I landed in Oceanus Procellarum on 20 April 1967, bouncing a little. I dug trenches with my scoop and sent thousands of pictures.","I went quiet after the lunar night. In November 1969 Apollo 12 astronauts walked to me and took my camera and parts back to Earth."],
+ C:[["Landing legs","Crushable footpads absorbed the landing shock."],["Soil scoop","A small arm dug trenches to test the lunar soil strength."],["TV camera","Sent images of the surface to Earth."],["Solar panel & battery","Powered me during the lunar day."]],
+ R:["Launch, Apr 1967","Flight to the Moon","Bouncy landing","Digging trenches","Lunar night, silence","Apollo 12 visit, 1969"]},
+{id:"lrv",z:"Moon",n:"Lunar Roving Vehicle",e:"🚙",y:"1971–1972",
+ P:["Boeing and General Motors built me for NASA's Apollo missions. I folded up and rode to the Moon on the lander.","I drove on Apollo 15, 16 and 17, letting astronauts go much farther than on foot. My top moon speed was about 13 km/h.","All three of me were left behind on the Moon. My legacy lives in modern rover design."],
+ C:[["Wire-mesh wheels","Springy wheels worked without air, which is useless on the Moon."],["Electric motors","One motor in each wheel."],["Silver-zinc batteries","Not rechargeable, enough for the planned drives."],["Folding frame","Folded to fit inside the lander."]],
+ R:["Folded in the lander","Journey to the Moon","Unfolding on the surface","First drive","Exploration drives","Parked for good"]},
+{id:"eag",z:"Moon",n:"Apollo 11 Eagle",e:"🌕",y:"1969",
+ P:["Grumman built me as the lunar module for Apollo 11. I rode atop a Saturn V and reached lunar orbit in July 1969.","On 20 July 1969 I landed in the Sea of Tranquility. Neil Armstrong and Buzz Aldrin walked out of me and made history.","My descent stage remains at Tranquility Base. My ascent stage lifted the crew back to orbit and was left behind; its fate is uncertain."],
+ C:[["Descent engine","A throttleable rocket let Armstrong steer to a safe spot."],["Ascent engine","Simple and reliable, it launched the crew off the Moon."],["Landing legs","Absorbed landing shock on uneven ground."],["Guidance computer","One of the first digital flight computers."]],
+ R:["Launch on Saturn V","Coast to the Moon","Landing, 20 Jul 1969","First steps","Ascent back to orbit","Left behind"]},
+{id:"a12",z:"Moon",n:"Apollo 12 Intrepid",e:"🌘",y:"1969",
+ P:["Grumman built me as the lunar module for Apollo 12, launched on 14 November 1969. My crew wanted a pinpoint landing close to the old Surveyor 3.","I landed in the Ocean of Storms on 19 November 1969. Pete Conrad and Alan Bean made two moonwalks, set up science instruments and walked to Surveyor 3.","My ascent stage was crashed into the Moon on purpose so seismometers could record the shaking. My descent stage still sits where I landed."],
+ C:[["Descent engine","A throttleable rocket for a controlled landing."],["Landing radar","Measured height and speed above the surface."],["ALSEP science station","Instruments left behind to keep measuring after the crew left."]]},
+{id:"a14",z:"Moon",n:"Apollo 14 Antares",e:"⛳",y:"1971",
+ P:["I was the lunar module for Apollo 14, launched on 31 January 1971, built by Grumman.","I landed in the Fra Mauro highlands on 5 February 1971. Alan Shepard and Edgar Mitchell made two moonwalks, pulled a tool cart and collected rocks. Shepard even hit golf balls.","My descent stage remains at Fra Mauro. My ascent stage was crashed into the Moon after the crew left."],
+ C:[["Tool cart","A hand cart that carried tools and rock samples."],["Ascent engine","Lifted the crew back to orbit."],["Seismometer","Recorded moonquakes and impacts."]]},
+{id:"a15",z:"Moon",n:"Apollo 15 Falcon",e:"🦅",y:"1971",
+ P:["I was the lunar module for Apollo 15, launched on 26 July 1971. I carried the first Lunar Roving Vehicle to the Moon.","I landed near the Hadley Rille and Apennine mountains on 30 July 1971. David Scott and James Irwin drove the rover and found the famous Genesis Rock.","My descent stage and a parked rover stay on the Moon. My crew left a small plaque for astronauts who died in the space race."],
+ C:[["Rover bay","Carried the folded rover on my side."],["Descent engine","Controlled my landing."],["Cameras","Captured the Hadley landscape."]]},
+{id:"a16",z:"Moon",n:"Apollo 16 Orion",e:"🌜",y:"1972",
+ P:["I was the lunar module for Apollo 16, launched on 16 April 1972, headed for the Moon's highlands.","I landed in the Descartes Highlands on 21 April 1972. John Young and Charles Duke made three moonwalks with the rover. Their samples showed the area was not volcanic as scientists had expected.","My descent stage and the rover remain at Descartes."],
+ C:[["Landing legs","Handled rough highland terrain."],["Rover","Let the crew drive far from me."],["Ultraviolet camera","Photographed Earth and stars from the Moon."]]},
+{id:"a17",z:"Moon",n:"Apollo 17 Challenger",e:"🌠",y:"1972",
+ P:["I was the lunar module for Apollo 17, launched on 7 December 1972 in the only night launch of the Apollo program.","I landed in the Taurus-Littrow valley on 11 December 1972. Eugene Cernan and geologist Harrison Schmitt made three moonwalks and found orange volcanic soil.","My crew left on 14 December 1972. They were the last humans to walk on the Moon. My descent stage is still there."],
+ C:[["Descent stage","Stays as a launch platform and monument."],["Rover","Drove farther than any rover before it."],["Sample boxes","Brought back about 110 kg of Moon rocks."]]},
+{id:"sv1",z:"Moon",n:"Surveyor 1",e:"📷",y:"1966",
+ P:["NASA launched me on 30 May 1966 to test soft landings on the Moon before astronauts went.","I landed in Oceanus Procellarum on 2 June 1966, the first US soft landing on the Moon. I sent back more than 11,000 pictures and showed the soil could hold a lander.","My last signals reached Earth in early 1967. I remain on the Moon, silent."],
+ C:[["TV camera","Sent the first close-up pictures from the surface."],["Crushable footpads","Absorbed landing shock."],["Solar panel","Charged my batteries in daylight."]]},
+{id:"vk2",z:"Mars",n:"Viking 2 Lander",e:"📡",y:"1975–1980",
+ P:["I am Viking 1's twin. NASA launched me on 9 September 1975 to look for life on Mars.","I landed in Utopia Planitia on 3 September 1976. I took pictures, measured the weather and tested soil. I even photographed frost on the ground.","My last transmission was on 11 April 1980. I stay in Utopia Planitia."],
+ C:[["RTG power","Nuclear generators gave steady power."],["Sampler arm","Scooped soil for experiments."],["Weather sensors","Measured temperature, wind and pressure."]]},
+{id:"voy",z:"Deep Space",n:"Voyager 1",e:"🪐",y:"1977–now",
+ P:["NASA/JPL built me and launched me on 5 September 1977 to tour the outer planets. I carry a Golden Record with sounds and pictures of Earth.","I flew by Jupiter in 1979 and Saturn in 1980, discovering volcanoes on Io. In 2012 I became the first spacecraft to enter interstellar space.","I am still talking to Earth, though most of my instruments are switched off to save power. On 18 November 2026 I reach one light-day from Earth, about 25.9 billion km."],
+ C:[["RTG power","Plutonium decay makes heat and electricity, no sunlight needed."],["High-gain antenna","A 3.7 m dish sends my signal across billions of km."],["Golden Record","A message to any future finder."],["Plasma instruments","Measure charged particles, how I knew I left the Sun's bubble."]],
+ R:["Launch, Sep 1977","Jupiter flyby, 1979","Saturn flyby, 1980","Pale Blue Dot photo, 1990","Interstellar space, 2012","Still travelling"]},
+{id:"pho",z:"Mars",n:"Phoenix Lander",e:"❄️",y:"2007–2008",
+ P:["I was built by NASA with university partners to study Mars near its north pole. I launched on 4 August 2007.","I landed on 25 May 2008, dug into the ground with my robotic arm, and found water ice just below the surface.","As polar winter brought darkness, my solar power faded. My last contact came in November 2008."],
+ C:[["Robotic arm","Dug trenches to reach the icy soil."],["Solar panels","Powered me during the short polar summer."],["Oven and chemistry lab","Heated soil samples to study what they contain."],["Camera","Photographed the icy trenches."]],
+ R:["Launch, Aug 2007","Cruise to Mars","Landing near the pole","Digging begins","Water ice found","Winter darkness, Nov 2008"]},
+{id:"ins",z:"Mars",n:"InSight Lander",e:"🎧",y:"2018–2022",
+ P:["I was built by NASA/JPL to listen to the inside of Mars. I launched on 5 May 2018.","I landed on Elysium Planitia on 26 November 2018 and placed the first seismometer on Mars. I recorded more than 1,300 marsquakes.","Dust slowly covered my solar panels. NASA ended my mission in December 2022. I stay where I landed."],
+ C:[["Seismometer (SEIS)","Detects tiny ground vibrations from marsquakes."],["Heat probe (HP3)","Tried to measure heat from the interior, but the probe got stuck."],["Solar arrays","Round panels that slowly lost power to dust."],["Robotic arm","Placed my instruments on the ground."]],
+ R:["Launch, May 2018","Cruise to Mars","Landing, 26 Nov 2018","Seismometer placed","Marsquakes recorded","Mission ends, Dec 2022"]}
+];
+D.forEach(o=>{o.R=o.R||["Built and launched","Journey to "+o.z,"Arrival","Mission work","Last contact","Where I am today"]});
+const $=s=>document.querySelector(s);let zone="Moon",cur=null,tab="b",lvl="Everyday",hist=[];
+const L={Simple:"a 7-year-old child, simple words and a short story",Everyday:"a curious adult, clear science",Engineering:"an engineering student, technical detail on mechanisms, materials, sensors"};
+function home(){cur=null;$("#app").innerHTML=`<h1>🚀 Echoes of Space</h1><p class=tag>Machines may stop. Their stories never do.</p>
+<div class=zones>${["Moon","Mars","Deep Space"].map(z=>`<button class="${z==zone?"on":""}" onclick="zone='${z}';home()">${{Moon:"🌕",Mars:"🔴","Deep Space":"🪐"}[z]}<br>${z}</button>`).join("")}</div>
+<input id=q placeholder="Search relics…" oninput="flt()" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1230;color:var(--ink)">
+<div class=grid id=g></div><p class=foot>Educational reconstructions based on public NASA mission history.</p>`;flt()}
+function flt(){const q=($("#q")?.value||"").toLowerCase();$("#g").innerHTML=D.filter(o=>(q?o.n.toLowerCase().includes(q):o.z==zone)).map(o=>`<button class=obj onclick="open_('${o.id}')"><span style="font-size:1.6rem">${o.e}</span><b>${o.n}</b><small>${o.y}</small></button>`).join("")}
+function open_(id){cur=D.find(o=>o.id==id);tab="b";hist=[];view()}
+function view(){const o=cur,i={b:0,m:1,t:2}[tab];let body="";
+if(["b","m","t"].includes(tab))body=`<div class=say>“${o.P[i]}”</div>`;
+if(tab=="c")body=o.C.map(c=>`<div class=card><b>⚙️ ${c[0]}</b><br>${c[1]}</div>`).join("");
+if(tab=="r")body=`<div class=bar><i id=pb></i></div>`+o.R.map((r,k)=>`<div class=step id=s${k}>${k+1}. ${r}</div>`).join("")+`<div class=row><button onclick=play()>▶ Play replay</button></div>`;
+if(tab=="q")body=quiz(o);if(tab=="id")body=truth(o)+`<div class="card relic"><div style="font-size:3rem">${o.e}</div><h2>${o.n}</h2><p>Zone: ${o.z}<br>Active: ${o.y}</p><p class=tag>“${o.P[0].split(". ")[0]}.”</p></div>`;
+$("#app").innerHTML=`<button class=back onclick=back_()>← Back to ${o.z}</button><h1>${o.e} ${o.n}</h1>
+<div class=row>${[["b","1 Birth"],["m","2 Mission"],["t","3 Today"],["c","⚙️ Lab"],["r","🎬 Replay"],["id","🪪 ID"],["q","🧠 Quiz"]].map(t=>`<button class="${t[0]==tab?"on":""}" onclick="tab='${t[0]}';view()">${t[1]}</button>`).join("")}</div>
+<div id=body>${body}</div>
+<div class=card><b>💬 Talk to me</b><div class=row>${Object.keys(L).map(k=>`<button class="${k==lvl?"on":""}" onclick="lvl='${k}';view()">${{Simple:"👶",Everyday:"👨",Engineering:"👨‍🔬"}[k]} ${k}</button>`).join("")}</div>
+<div id=log>${hist.map(h=>`<div class=${h[0]}>${h[1]}</div>`).join("")}</div>
+<div class=in><input id=ask placeholder="Ask me anything…" onkeydown="if(event.key=='Enter')send()"><button onclick=send()>Send</button><button onclick=mic() title=Speak>🎤</button></div></div>`}
+function quiz(o){const all=D.flatMap(x=>x.id==o.id?[]:x.C.map(c=>c[0])),c=o.C[Math.floor(Math.random()*o.C.length)],opts=[c[0],...all.sort(()=>Math.random()-.5).filter(n=>n!=c[0]).slice(0,2)].sort(()=>Math.random()-.5);return `<div class=card><b>🧠 Which part of ${o.n} is this?</b><p>“${c[1]}”</p><div class=row>${opts.map(n=>`<button onclick="ans(this,${n==c[0]})">${n}</button>`).join("")}</div><div id=qr></div><div class=row><button onclick="view()">Next question ➜</button></div></div>`}
+function ans(b,ok){b.style.borderColor=ok?"#5ee08a":"#ff6b6b";$("#qr").textContent=ok?"✅ Correct! Well done.":"❌ Not quite. Try another one!"}
+function play(){let k=0;const t=setInterval(()=>{if(k>=cur.R.length)return clearInterval(t);document.querySelectorAll(".step").forEach((s,j)=>s.classList.toggle("on",j==k));$("#pb").style.width=((k+1)/cur.R.length*100)+"%";k++},1200)}
+function add(c,t){hist.push([c,t]);const l=$("#log");if(!l){const d=document.createElement("div");d.innerHTML=t;return d}l.insertAdjacentHTML("beforeend",`<div class=${c}>${t}</div>`);l.scrollTop=1e9;return l.lastElementChild}
+async function send(q0){const el=$("#ask"),q=(q0!=null?q0:(el?el.value:"")).trim();if(!q)return;if(el)el.value="";stopSp();awake=true;add("u",q.replace(/</g,"&lt;"));const b=add("r","…");subMsg("🤔 …","You: "+q.replace(/</g,"&lt;"));
+try{const s=await claude.use("sample");if(!s)throw 0;
+const sys=`You are ${cur.n} (${cur.z}, ${cur.y}), a NASA space machine speaking in first person. Explain for ${L[lvl]}. You are chatting like a friendly person. Reply in 1 or 2 short sentences and answer only what was asked; for a greeting just greet back. Reply in ${LG[lang][0]}. Use only verified facts; if unsure, say you are not certain. Never claim human feelings: say you don't experience them. Known facts: ${cur.P.join(" ")} Components: ${cur.C.map(c=>c[0]+": "+c[1]).join("; ")}.`;
+const h=hist.slice(0,-1).map(x=>({role:x[0]=="u"?"user":"assistant",content:x[1]}));
+const r=await s([{role:"user",content:sys+"\n\nConversation so far then new question:\n"+h.map(m=>m.role+": "+m.content).join("\n")+"\nuser: "+q}],{cache:false,onText:({text})=>{b.textContent=text}});
+b.textContent=r.text;hist[hist.length-1][1]=r.text;speak(r.text)}catch(e){AE=(e&&(e.code||e.message))||"unavailable";const a=offline(q);b.textContent=a;hist[hist.length-1][1]=a;speak(a,lang!="en"&&!/^(hi|hello|hey)/i.test(q))}}
+function speak(t){try{if(window.speechSynthesis&&$("#ask")){const u=new SpeechSynthesisUtterance(t);speechSynthesis.cancel();speechSynthesis.speak(u)}}catch(e){}}
+function mic(){const R=window.SpeechRecognition||window.webkitSpeechRecognition;if(!R)return alert("Voice input is not supported in this browser.");const r=new R();r.lang=LG[lang][1];r.onresult=e=>{send(e.results[0][0].transcript)};r.onerror=e=>subMsg("🎤 "+(e.error||"mic error"),"");r.start()}
+let focus=null,yaw=0,pit=.15,drag=null,pushed=false,lang="en",mute=false;
+const LG={en:["English","en-US"],te:["తెలుగు","te-IN"],hi:["हिन्दी","hi-IN"],es:["Español","es-ES"],fr:["Français","fr-FR"],ar:["العربية","ar-SA"],zh:["中文","zh-CN"],ja:["日本語","ja-JP"],de:["Deutsch","de-DE"],pt:["Português","pt-BR"],ru:["Русский","ru-RU"],bn:["বাংলা","bn-IN"]};
+const VC=()=>`<div class=row><select id=lg onchange="lang=this.value;view();narr()">${Object.keys(LG).map(k=>`<option value=${k} ${k==lang?"selected":""}>${LG[k][0]}</option>`).join("")}</select><button onclick="narr()">▶ Listen</button><button onclick="mute=!mute;if(mute)speechSynthesis.cancel();view()">${mute?"🔇 Voice off":"🔊 Voice on"}</button></div>`;
+let AE="";const TC={},UI0={birth:"1 Birth",mis:"2 Mission",tod:"3 Today",more:"📖 More",ask:"Ask me anything…",wake:"👆 Touch me to wake me up",sleep:"is sleeping",hint:"Ask me anything, type or tap 🎤"},UC={};let UI={...UI0};
+async function tr(t){if(lang=="en")return t;const k=lang+"|"+t;if(TC[k])return TC[k];try{const s=await claude.use("sample");const r=await s([{role:"user",content:"Translate into "+LG[lang][0]+", natural first-person voice, same meaning. Output only the translation:\n"+t}],{cache:true});TC[k]=r.text.trim();return TC[k]}catch(e){AE=(e&&(e.code||e.message))||"unavailable";return t}}
+async function trUI(){if(lang=="en"){UI={...UI0};return applyUI()}if(UC[lang]){UI=UC[lang];return applyUI()}try{const s=await claude.use("sample");const r=await s([{role:"user",content:"Translate the values of this JSON into "+LG[lang][0]+". Keep emojis and numbers. Output only valid JSON:\n"+JSON.stringify(UI0)}],{cache:true});UI=UC[lang]={...UI0,...JSON.parse(r.text.replace(/```json|```/g,"").trim())};applyUI()}catch(e){VE="translation unavailable"}}
+const UD={en:["1 Birth","2 Mission","3 Today","📖 More","Ask me anything…","👆 Touch me to wake me up","is sleeping","Ask me anything, type or tap 🎤","Hi, I am {n}! Tap Birth, Mission or Today to hear my story, or just ask me anything."],
+te:["1 పుట్టుక","2 మిషన్","3 నేడు","📖 మరిన్ని","ఏదైనా అడగండి…","👆 నన్ను తట్టి లేపండి","నిద్రపోతోంది","ఏదైనా అడగండి, టైప్ చేయండి లేదా 🎤 నొక్కండి","హాయ్, నేను {n}! నా కథ వినడానికి పుట్టుక, మిషన్ లేదా నేడు నొక్కండి, లేదా ఏదైనా అడగండి."],
+hi:["1 जन्म","2 मिशन","3 आज","📖 और","कुछ भी पूछो…","👆 मुझे छूकर जगाओ","सो रहा है","कुछ भी पूछो, टाइप करो या 🎤 दबाओ","नमस्ते, मैं {n} हूँ! मेरी कहानी सुनने के लिए जन्म, मिशन या आज दबाओ, या कुछ भी पूछो।"],
+es:["1 Nacimiento","2 Misión","3 Hoy","📖 Más","Pregúntame lo que quieras…","👆 Tócame para despertarme","está durmiendo","Pregunta, escribe o toca 🎤","¡Hola, soy {n}! Toca Nacimiento, Misión u Hoy para oír mi historia, o pregúntame lo que quieras."],
+fr:["1 Naissance","2 Mission","3 Aujourd'hui","📖 Plus","Demande-moi ce que tu veux…","👆 Touche-moi pour me réveiller","dort","Pose une question, écris ou touche 🎤","Salut, je suis {n} ! Touche Naissance, Mission ou Aujourd'hui pour entendre mon histoire, ou demande-moi ce que tu veux."],
+ar:["1 الولادة","2 المهمة","3 اليوم","📖 المزيد","اسألني أي شيء…","👆 المسني لتوقظني","نائم","اسألني أو اكتب أو المس 🎤","مرحبًا، أنا {n}! المس الولادة أو المهمة أو اليوم لتسمع قصتي، أو اسألني أي شيء."],
+zh:["1 诞生","2 任务","3 现在","📖 更多","随便问我…","👆 摸摸我，把我叫醒","正在睡觉","提问、输入或点击 🎤","你好，我是{n}！点击诞生、任务或现在来听我的故事，或者直接问我。"],
+ja:["1 誕生","2 ミッション","3 現在","📖 もっと","何でも聞いてね…","👆 触って起こして","眠っています","質問するか、入力するか、🎤をタップ","こんにちは、{n}です！誕生、ミッション、現在をタップして私の物語を聴くか、何でも聞いてね。"],
+de:["1 Geburt","2 Mission","3 Heute","📖 Mehr","Frag mich etwas…","👆 Berühre mich, um mich zu wecken","schläft","Frag, tippe oder berühre 🎤","Hallo, ich bin {n}! Tippe auf Geburt, Mission oder Heute, um meine Geschichte zu hören, oder frag mich etwas."],
+pt:["1 Nascimento","2 Missão","3 Hoje","📖 Mais","Pergunte qualquer coisa…","👆 Toque em mim para me acordar","está dormindo","Pergunte, digite ou toque em 🎤","Oi, eu sou {n}! Toque em Nascimento, Missão ou Hoje para ouvir minha história, ou pergunte qualquer coisa."],
+ru:["1 Рождение","2 Миссия","3 Сегодня","📖 Ещё","Спроси что угодно…","👆 Коснись меня, чтобы разбудить","спит","Спроси, напиши или нажми 🎤","Привет, я {n}! Нажми Рождение, Миссия или Сегодня, чтобы услышать мою историю, или спроси что угодно."],
+bn:["1 জন্ম","2 মিশন","3 আজ","📖 আরও","যা খুশি জিজ্ঞেস করো…","👆 আমাকে ছুঁয়ে জাগাও","ঘুমাচ্ছে","জিজ্ঞেস করো, টাইপ করো বা 🎤 চাপো","হ্যালো, আমি {n}! আমার গল্প শুনতে জন্ম, মিশন বা আজ চাপো, অথবা যা খুশি জিজ্ঞেস করো।"]};
+function trUI(){const a=UD[lang]||UD.en;UI={birth:a[0],mis:a[1],tod:a[2],more:a[3],ask:a[4],wake:a[5],sleep:a[6],hint:a[7]};applyUI()}
+function offline(q){const o=cur,s=q.toLowerCase(),has=r=>r.test(s);if(has(/\b(hi|hello|hey|hola|namaste)\b/))return(UD[lang]||UD.en)[8].replace("{n}",o.n);if(has(/born|birth|built|build|creat|launch|who made|why were you|purpose/))return o.P[0];if(has(/mission|discover|achiev|land|challenge|did you|accomplish/))return o.P[1];if(has(/today|now|still|where are|operational|end|stop|silent|alive|legacy/))return o.P[2];for(const c of o.C){if(c[0].toLowerCase().split(/\W+/).some(w=>w.length>3&&s.includes(w)))return c[1]}return"I can tell you about my birth, my mission, my life today, or my parts like "+o.C.map(c=>c[0]).join(", ")+". What would you like to know?"}
+function applyUI(){const b=document.querySelectorAll("#dock .row button");if(b[0]){b[0].textContent=UI.birth;b[1].textContent=UI.mis;b[2].textContent=UI.tod}const a=$("#ask2");if(a)a.placeholder=UI.ask;const m=$("#mre");if(m)m.textContent=more?"✕":UI.more}
+function speak(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t),c=LG[lang][1],v=speechSynthesis.getVoices().find(v=>v.lang.replace("_","-").startsWith(c.slice(0,2)));u.lang=c;if(v)u.voice=v;u.pitch=.7+(cur?D.indexOf(cur)%5:0)*.12;u.rate=.95;speechSynthesis.speak(u)}catch(e){}}
+async function narr(){try{speechSynthesis.cancel()}catch(e){}if(!cur||mute||!["b","m","t"].includes(tab))return;const el=document.querySelector(".say");let t=cur.P[{b:0,m:1,t:2}[tab]];if(lang!="en"&&el){el.style.opacity=.5;t=await tr(t);el.textContent="“"+t+"”";el.style.opacity=1}speak(t)}
+let awake=false,more=false,hop=0,amp=0,spk=false,tok=0;
+document.body.insertAdjacentHTML("beforeend",`<div id=dock style="display:none"><div id=sub onclick="touch()"></div><div class=row><button onclick="chap(0)">1 Birth</button><button onclick="chap(1)">2 Mission</button><button onclick="chap(2)">3 Today</button><button id=mre onclick="more=!more;view()">📖 More</button></div><div class=in><input id=ask2 placeholder="Ask me anything…" onkeydown="if(event.key=='Enter')dsend()"><button onclick="mic()">🎤</button><button onclick="dsend()">➤</button></div></div>`);
+document.body.insertAdjacentHTML("beforeend",`<div id=tb style="display:none"><button onclick="back_()">←</button><b id=tbn></b><button id=tcb onclick="tab='id';more=true;view()"></button><button id=vtg onclick="mute=!mute;if(mute)stopSp();view()">🔊</button><div class=r2><select id=lgs onchange="lang=this.value;trUI();view();awake=true;unlock();startStory()"></select><select id=lvs onchange="lvl=this.value"><option value=Simple>👶 Simple</option><option value=Everyday>👨 Everyday</option><option value=Engineering>👨‍🔬 Engineering</option></select></div></div>`);
+const sents=t=>(t.match(/[^.!?。！？]+[.!?。！？]*/g)||[t]).map(s=>s.trim()).filter(Boolean);
+function subMsg(h,lb){$("#sub").innerHTML=(lb?"<small>"+lb+"</small>":"")+"<div>"+h+"</div>"}
+function stopSp(){tok++;spk=false;try{speechSynthesis.cancel()}catch(e){}}
+function sayOne(L,my){return new Promise(res=>{const t=L.t,w=t.split(/\s+/);subMsg(w.map(x=>"<span>"+x+"</span>").join(" "),L.lb);
+let done=0,gotB=0,st=0,i=0,u;const fin=()=>{if(!done){done=1;clearInterval(iv);clearTimeout(f1);clearTimeout(f2);res()}};
+const hl=n=>document.querySelectorAll("#sub span").forEach((s,j)=>s.className=j<=n?"hot":"");
+const iv=setInterval(()=>{if(my!=tok)return fin();if(!gotB)hl(i++);amp=1},385);
+const f1=setTimeout(()=>{if(!st)fin()},w.length*385+1500),f2=setTimeout(fin,w.length*700+7000);
+if(!mute)try{u=new SpeechSynthesisUtterance(t);const c=LG[lang][1],v=speechSynthesis.getVoices().find(x=>x.lang.replace("_","-").startsWith(c.slice(0,2)));u.lang=c;if(v)u.voice=v;u.pitch=.7+(cur?D.indexOf(cur)%5:0)*.12;u.rate=.95;u.onstart=()=>{st=1};u.onend=fin;u.onerror=()=>{st=0};u.onboundary=e=>{gotB=1;hl(t.slice(0,e.charIndex).split(/\s+/).length-1);amp=1};setTimeout(()=>{if(my==tok&&!done)speechSynthesis.speak(u)},80)}catch(e){}
+})}
+async function say(L){const my=++tok;spk=true;try{speechSynthesis.cancel()}catch(e){}for(const l of L){if(my!=tok)return;await sayOne(l,my)}if(my==tok){spk=false;subMsg("Ask me anything, type or tap 🎤","")}}
+function speak(t,en){say(sents(t).map(s=>({t:s,en,lb:cur?cur.n:""})))}
+async function startStory(c){const o=cur;if(!o)return;stopSp();subMsg("…");const P=[["Hello",(UD[lang]||UD.en)[8].replace("{n}",o.n)],["My birth",o.P[0]],["My mission",o.P[1]],["My life today",o.P[2]],["Ask me","That is my story. Now ask me anything. Type, or tap the microphone!"]],S=c==null?[P[0]]:[P[c+1]],tx=await Promise.all(S.map(p=>p[0]=="Hello"?p[1]:tr(p[1])));if(cur!=o)return;const L=[];S.forEach((p,i)=>sents(tx[i]).forEach(s=>L.push({t:s,en:lang!="en"&&p[0]!="Hello"&&tx[i]===p[1],lb:p[0]})));say(L)}
+function unlock(){try{speechSynthesis.speak(new SpeechSynthesisUtterance(""))}catch(e){}}
+function touch(){if(!cur)return;hop=1;unlock();if(!awake){awake=true;startStory()}else if(!spk)react()}
+async function react(){const q=["Hehe, that tickles!","Hey, be gentle! I am a delicate machine.","Yes? I am listening. Ask me something!"],t=await tr(q[Math.floor(Math.random()*3)]);say([{t,lb:cur?cur.n:""}])}
+function chap(i){awake=true;hop=1;unlock();startStory(i)}
+function dsend(){const v=$("#ask2").value.trim();if(!v)return;$("#ask2").value="";unlock();send(v)}
+function narr(){if(cur){awake=true;unlock();startStory({b:0,m:1,t:2}[tab]??0)}}
+let VE="";try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
+function unlock(){}
+function vox(g){const c=LG[g||lang][1],V=speechSynthesis.getVoices(),n=x=>x.lang.replace("_","-");return V.find(x=>n(x)==c)||V.find(x=>n(x).startsWith(c.slice(0,2)))||((g||lang)=="en"?V.find(x=>n(x).startsWith("en")):null)}
+async function say(L){const my=++tok;await new Promise(r=>setTimeout(r,150));for(const l of L){if(my!=tok)return;await sayOne(l,my)}if(my==tok){spk=false;subMsg(UI.hint,"")}}
+function sayOne(L,my){return new Promise(res=>{const t=L.t,w=t.split(/\s+/);subMsg(w.map(x=>"<span>"+x+"</span>").join(" "),(L.lb||"")+(VE?" · 🔇 "+VE:"")+(AE?" · ⚠️ AI: "+AE:""));
+let done=0,gotB=0,st=0,i=0;const fin=()=>{if(!done){done=1;clearInterval(iv);clearTimeout(f1);clearTimeout(f2);res()}};
+const hl=n=>document.querySelectorAll("#sub span").forEach((s,j)=>s.className=j<=n?"hot":"");
+const iv=setInterval(()=>{if(my!=tok)return fin();if(!gotB&&spk)hl(i++);amp=1},385);
+const f1=setTimeout(()=>{if(!st)fin()},w.length*385+1800),f2=setTimeout(fin,w.length*700+7000);
+setTimeout(()=>{if(!st&&!done&&my==tok)spk=true},mute?100:1600);if(mute)return;if(!window.speechSynthesis){VE="no speech support";return}
+try{const u=new SpeechSynthesisUtterance(t),g=L.en?"en":lang,v=vox(g);if(v){u.voice=v;u.lang=v.lang}else{u.lang=LG[g][1];if(g!="en"){VE="no "+LG[g][0]+" voice listed on this phone";const sm=document.querySelector("#sub small");if(sm)sm.textContent+=" · 🔇 "+VE}}u.pitch=1;u.rate=.92;u.volume=1;u.onstart=()=>{st=1;VE="";spk=true};u.onend=fin;u.onerror=e=>{st=0;VE=(e.error||"error")+(e.error=="language-unavailable"||e.error=="synthesis-unavailable"?": install "+LG[lang][0]+" voice in phone Settings > Text-to-speech":"");const sm=document.querySelector("#sub small");if(sm)sm.textContent+=" · 🔇 "+VE};u.onboundary=e=>{gotB=1;hl(t.slice(0,e.charIndex).split(/\s+/).length-1);amp=1};
+if(speechSynthesis.speaking||speechSynthesis.pending){speechSynthesis.cancel();setTimeout(()=>{if(my==tok&&!done)speechSynthesis.speak(u)},120)}else speechSynthesis.speak(u);if(speechSynthesis.paused)speechSynthesis.resume()}catch(e){VE=String(e)}
+})}
+const ZI={Earth:"🌍 Earth · where every mission began",Moon:"🌕 Moon · about 384,400 km from Earth",Mars:"🔴 Mars · roughly 55 to 400 million km away, depending on the year","Deep Space":"🪐 Deep Space · Voyager 1 is about 1 light-day (25.9 billion km) away on 18 Nov 2026"};
+const MK={sur:["m",-3,-23.4],lrv:["m",23,8],a12:["m",-10,-30],a14:["m",-2,-14],a15:["m",26.1,3.6],a16:["m",-9,15.5],a17:["m",20.2,30.8],sv1:["m",-2.5,-43],vk2:["r",47.7,134.3],eag:["m",.7,23.5],soj:["r",19,-33],spi:["r",-15,175.5],opp:["r",-2,-5.5],vik:["r",22.5,-50],voy:["v"],pho:["r",68.2,-125.7],ins:["r",4.5,135.6]};
+function go(z){zone=z;yaw=0;pit=.15;home()}
+function flt(){const q=($("#q")?.value||"").toLowerCase();$("#g").innerHTML=D.filter(o=>q?o.n.toLowerCase().includes(q):(zone=="Earth"||o.z==zone)).map(o=>`<button class=obj onclick="open_('${o.id}')"><span style="font-size:1.6rem">${o.e}</span><b>${o.n}</b><small>${o.y}</small></button>`).join("")}
+function home(){stopSp();awake=false;more=false;const tb0=$("#tb");if(tb0)tb0.style.display="none";const dk=$("#dock");if(dk)dk.style.display="none";cur=null;focus=null;$("#app").innerHTML=`<h1>🚀 Echoes of Space</h1><p class=tag>Machines may stop. Their stories never do.</p>
+<div class=zones>${["Earth","Moon","Mars","Deep Space"].map(z=>`<button class="${z==zone?"on":""}" onclick="go('${z}')">${{Earth:"🌍",Moon:"🌕",Mars:"🔴","Deep Space":"🪐"}[z]}<br>${z}</button>`).join("")}</div>
+<div class=row><button onclick="games()">🎮 Missions &amp; Simulators</button></div>
+<div id=stage><div class=hud>${ZI[zone]} · drag to look around, tap a glowing relic</div></div>
+<input id=q placeholder="Search relics…" oninput="flt()" style="width:100%;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1230;color:var(--ink)">
+<div class=grid id=g></div><p class=foot>Educational reconstructions based on public NASA mission history.</p>`;flt()}
+function openRaw(id){cur=D.find(o=>o.id==id);focus=id;zone=cur.z;tab="b";hist=[];yaw=0;pit=.15;scrollTo(0,0);awake=false;more=false;stopSp();view();subMsg(UI.wake,"💤 "+cur.n+" "+UI.sleep)}
+function open_(id){openRaw(id);if(location.hash!="#"+id){pushed=true;location.hash=id}}
+function back_(){if(pushed){pushed=false;history.back()}else home()}
+const _v=view;view=function(){_v();const a=$("#app"),w=document.createElement("div");w.className="panel";while(a.firstChild)w.appendChild(a.firstChild);$("#dock").style.display="block";$("#tb").style.display="flex";$("#tbn").textContent=cur.e+" "+cur.n;$("#tcb").textContent=TK[cur.id]?(TK[cur.id].s?"🟡":"✅"):"⚠️";$("#lgs").innerHTML=Object.keys(LG).map(k=>`<option value=${k} ${k==lang?"selected":""}>${LG[k][0]}</option>`).join("");$("#lvs").value=lvl;$("#vtg").textContent=mute?"🔇":"🔊";$("#mre").textContent=more?"✕":UI.more;applyUI();a.innerHTML=more?'<div class=sp style="height:30vh"></div>':"";if(more)a.appendChild(w)};
+try{
+const T=THREE,cv=document.createElement("canvas");cv.id="bg";document.body.prepend(cv);
+const R=new T.WebGLRenderer({canvas:cv,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.setClearColor(0x050816);R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1;R.outputEncoding=T.sRGBEncoding;
+const S=new T.Scene(),C=new T.PerspectiveCamera(50,1,.1,3000),C2=new T.PerspectiveCamera(55,1,.1,2000);
+const rs=()=>{R.setSize(innerWidth,innerHeight);C.aspect=C2.aspect=innerWidth/innerHeight;C.updateProjectionMatrix();C2.updateProjectionMatrix()};addEventListener("resize",rs);rs();
+let sd=7;const rn=()=>(sd=sd*16807%2147483647)/2147483647;
+const tex=f=>{const c=document.createElement("canvas");c.width=512;c.height=256;f(c.getContext("2d"));const tt_=new T.CanvasTexture(c);tt_.encoding=T.sRGBEncoding;return tt_};
+const bl=(g,col,n,a,b)=>{for(let i=0;i<n;i++){g.fillStyle=col;g.beginPath();g.ellipse(rn()*512,rn()*256,a+rn()*b,(a+rn()*b)*.7,rn()*3,0,7);g.fill()}};
+const gt=(()=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d"),r=g.createRadialGradient(32,32,0,32,32,32);r.addColorStop(0,"rgba(255,255,255,1)");r.addColorStop(.25,"rgba(255,255,255,.6)");r.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=r;g.fillRect(0,0,64,64);return new T.CanvasTexture(c)})();
+const sp=(col,s)=>{const m=new T.Sprite(new T.SpriteMaterial({map:gt,color:col,blending:T.AdditiveBlending,depthWrite:false,transparent:true}));m.scale.set(s,s,1);m.userData.s=s;return m};
+const pl=(r,t,pos)=>{const m=new T.Mesh(new T.SphereGeometry(r,48,48),new T.MeshStandardMaterial({map:t,roughness:1,envMapIntensity:.12}));m.position.set(...pos);S.add(m);return m};
+S.add(new T.AmbientLight(0x6678aa,.55));const hl=new T.PointLight(0xffffff,.6);C.add(hl);S.add(C);const L=new T.DirectionalLight(0xffffff,1.4);L.position.set(380,90,260);S.add(L);
+const sun=sp(0xffe2a0,260);sun.position.set(380,90,260);S.add(sun);
+const earth=pl(5,tex(g=>{g.fillStyle="#1b4f9c";g.fillRect(0,0,512,256);bl(g,"#3d8c4b",40,14,30);bl(g,"#8a7a4a",12,8,16);g.fillStyle="#eef";g.fillRect(0,0,512,14);g.fillRect(0,242,512,14)}),[0,0,0]);
+const cloud=new T.Mesh(new T.SphereGeometry(5.1,40,40),new T.MeshStandardMaterial({map:tex(g=>{g.clearRect(0,0,512,256);bl(g,"rgba(255,255,255,.55)",50,10,30)}),transparent:true,depthWrite:false}));S.add(cloud);
+const atmo=(r,c,i)=>new T.Mesh(new T.SphereGeometry(r*1.07,48,48),new T.ShaderMaterial({transparent:true,side:T.BackSide,blending:T.AdditiveBlending,depthWrite:false,uniforms:{c:{value:new T.Color(c)},i:{value:i}},vertexShader:"varying vec3 n;void main(){n=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",fragmentShader:"uniform vec3 c;uniform float i;varying vec3 n;void main(){float f=pow(max(.7-dot(n,vec3(0.,0.,1.)),0.),4.);gl_FragColor=vec4(c,1.)*f*i;}"}));
+earth.add(atmo(5,0x4aa3ff,1.7));
+const moon=pl(1.5,tex(g=>{g.fillStyle="#8c8c8c";g.fillRect(0,0,512,256);bl(g,"#6f6f6f",16,10,26);for(let i=0;i<90;i++){g.strokeStyle="rgba(40,40,40,.5)";g.beginPath();g.arc(rn()*512,rn()*256,2+rn()*9,0,7);g.stroke()}}),[18,0,0]);
+const mars=pl(3.2,tex(g=>{g.fillStyle="#b4532e";g.fillRect(0,0,512,256);bl(g,"#7e3a20",30,10,26);bl(g,"#d98a5a",14,8,18);g.fillStyle="#f3e9e4";g.fillRect(0,0,512,10);g.fillRect(0,246,512,10)}),[-70,5,-40]);
+mars.add(atmo(3.2,0xff9a6a,1));
+const ENV=(()=>{const es=new T.Scene(),g=new T.SphereGeometry(50,24,12),cs=[],p=g.attributes.position;for(let i=0;i<p.count;i++){const y=(p.getY(i)+50)/100;cs.push(.05+.5*y,.07+.55*y,.12+.8*y)}g.setAttribute("color",new T.Float32BufferAttribute(cs,3));es.add(new T.Mesh(g,new T.MeshBasicMaterial({side:T.BackSide,vertexColors:true})));
+for(const q of[[30,20,30,12],[-35,10,20,8],[0,35,-20,10]]){const m=new T.Mesh(new T.PlaneGeometry(q[3],q[3]),new T.MeshBasicMaterial({color:0xffffff}));m.position.set(q[0],q[1],q[2]);m.lookAt(0,0,0);m.material.color.setScalar(6);es.add(m)}
+return new T.PMREMGenerator(R).fromScene(es,.02).texture})();S.environment=ENV;
+const op=[];for(let i=0;i<=128;i++){const a=i/128*6.2832;op.push(new T.Vector3(Math.cos(a)*18,0,Math.sin(a)*18))}
+S.add(new T.Line(new T.BufferGeometry().setFromPoints(op),new T.LineBasicMaterial({color:0x3a4a88,transparent:true,opacity:.5})));
+const N=3500,pp=new Float32Array(N*3);for(let i=0;i<N;i++){const u=rn()*2-1,t=rn()*6.2832,s=Math.sqrt(1-u*u);pp.set([1500*s*Math.cos(t),1500*u,1500*s*Math.sin(t)],i*3)}
+const sg=new T.BufferGeometry();sg.setAttribute("position",new T.BufferAttribute(pp,3));
+const stars=new T.Points(sg,new T.PointsMaterial({color:0xffffff,size:1.6,sizeAttenuation:false}));S.add(stars);
+const M3=(c,m,r)=>new T.MeshStandardMaterial({color:c,metalness:m,roughness:r});
+const voy=new T.Group(),gold=new T.MeshStandardMaterial({color:0xc9a24a,metalness:.6,roughness:.4}),gry=new T.MeshStandardMaterial({color:0xd0d4de,metalness:.5,roughness:.5,side:T.DoubleSide});
+const add=(g,m,p,r)=>{const x=new T.Mesh(g,m);x.position.set(...p);if(r)x.rotation.set(...r);voy.add(x)};
+add(new T.SphereGeometry(1.8,24,8,0,6.2832,0,1.25),gry,[0,0,1.2],[-Math.PI/2,0,0]);
+add(new T.BoxGeometry(1.4,1,1.4),gold,[0,0,-.7]);
+add(new T.CylinderGeometry(.05,.05,6),gry,[-3,0,-.8],[0,0,Math.PI/2]);
+add(new T.CylinderGeometry(.22,.22,2.6),gold,[2.4,0,-.8],[0,0,Math.PI/2]);
+add(new T.CylinderGeometry(.04,.04,7),gry,[0,-3.6,-.8]);
+voy.scale.setScalar(1.3);voy.position.set(180,30,-220);S.add(voy);
+const BD={m:[moon,1.5,.3],r:[mars,3.2,.55],v:[voy,0,1]};
+const ll=(la,lo,r)=>{const p=(90-la)*Math.PI/180,t=(lo+180)*Math.PI/180;return new T.Vector3(-r*Math.sin(p)*Math.cos(t),r*Math.cos(p),r*Math.sin(p)*Math.sin(t))};
+const chip=(txt,fn)=>{const c=document.createElement("button");c.className="chip";c.textContent=txt;c.onclick=fn;document.body.appendChild(c);return c};
+const Mk={},hits=[];let dn=null;
+const wh=M3(0xf1f1f1,.1,.7),dk=M3(0x1d1f26,.2,.8),sb=M3(0x1d3a8a,.3,.4),ty=M3(0x2a2a2a,0,1),ms=M3(0xa9adb5,.8,.5);
+const part=(g,m,p,r,par)=>{const x=new T.Mesh(g,m);x.position.set(...p);if(r)x.rotation.set(...r);par.add(x);return x};
+const BX=(w,h,d)=>new T.BoxGeometry(w,h,d),CY=(a,b,h,s=16)=>new T.CylinderGeometry(a,b,h,s);
+const legs=(g,n,rad,h,m,ln)=>{for(let i=0;i<n;i++){const q=new T.Group();q.rotation.y=i/n*6.2832;part(CY(.03,.03,h,6),m,[rad,h/2,0],[0,0,ln],q);part(CY(.12,.12,.04),m,[rad+Math.sin(ln)*h/2,.02,0],0,q);g.add(q)}};
+const wheel=(g,x,z,r,w,m)=>part(CY(r,r,w,18),m,[x,r,z],[Math.PI/2,0,0],g);
+const rover=sm=>{const g=new T.Group();part(BX(1.2,.32,.8),gold,[0,.62,0],0,g);part(BX(1.5,.04,1.05),sb,[0,.82,0],0,g);for(const x of[-.62,0,.62])for(const z of[-.58,.58])wheel(g,x,z,.22,.16,ty);for(const z of[-.58,.58])part(BX(1.3,.05,.05),gry,[0,.45,z],[0,0,.15],g);part(CY(.03,.03,.55,8),gry,[.5,1.1,.25],0,g);part(BX(.2,.12,.14),dk,[.5,1.42,.25],0,g);part(CY(.2,.2,.03,20),wh,[-.45,.95,-.2],[.9,0,0],g);if(sm)g.scale.setScalar(.7);return g};
+const viking=()=>{const g=new T.Group();part(CY(.55,.55,.3,6),gry,[0,.6,0],0,g);legs(g,3,.45,.6,gry,.5);part(CY(.28,.05,.1,20),wh,[.25,.95,.1],[.5,0,.3],g);part(CY(.03,.03,.7,8),gry,[-.3,1.1,.2],0,g);part(BX(.2,.1,.12),dk,[-.3,1.48,.2],0,g);for(const x of[-.2,.2])part(CY(.1,.1,.35,12),dk,[x,.8,-.35],0,g);part(BX(.7,.04,.04),gry,[.55,.55,.45],[0,.4,0],g);return g};
+const surveyor=()=>{const g=new T.Group();legs(g,3,.4,.7,gry,.55);part(BX(.3,.25,.3),gold,[0,.5,0],0,g);part(CY(.06,.06,.8,8),wh,[0,.95,0],0,g);part(BX(.9,.04,.7),sb,[0,1.4,0],[0,0,.15],g);part(BX(.25,.2,.2),dk,[.1,.9,.2],0,g);part(CY(.04,.04,.55,8),gry,[-.3,.45,.3],[0,0,1.2],g);return g};
+const lrv=()=>{const g=new T.Group();part(BX(1.4,.08,.7),gry,[0,.35,0],0,g);for(const x of[-.55,.55])for(const z of[-.42,.42])wheel(g,x,z,.2,.12,ms);for(const z of[-.17,.17]){part(BX(.25,.06,.28),wh,[-.1,.5,z],0,g);part(BX(.05,.3,.28),wh,[-.24,.65,z],0,g)}part(CY(.02,.02,.4,8),gry,[.45,.55,0],0,g);part(BX(.2,.12,.3),dk,[.45,.78,0],0,g);part(CY(.02,.02,.7,8),gry,[-.5,.8,.2],0,g);part(CY(.3,.03,.12,16),ms,[-.5,1.2,.2],0,g);part(BX(.3,.15,.3),gold,[-.5,.47,-.2],0,g);return g};
+const eagle=()=>{const g=new T.Group();legs(g,4,.62,.7,gry,.55);part(CY(.7,.7,.45,8),gold,[0,.65,0],0,g);part(CY(.5,.45,.6,8),gry,[0,1.15,0],0,g);part(BX(.35,.18,.04),dk,[0,1.25,.46],0,g);part(CY(.2,.2,.05,16),wh,[0,1.55,0],0,g);return g};
+const mkFace=(par,ex,ey,ez,gp,er,mx,my,mz,mw)=>{const eyes=[];for(const s of[-1,1]){const e=new T.Group();e.position.set(ex+s*gp,ey,ez);part(new T.SphereGeometry(er,14,10),new T.MeshBasicMaterial({color:0xffffff,toneMapped:false}),[0,0,0],0,e);part(new T.SphereGeometry(er*.5,10,8),new T.MeshBasicMaterial({color:0x111111}),[0,0,er*.7],0,e);par.add(e);eyes.push(e)}const mo=new T.Mesh(new T.SphereGeometry(1,14,10),new T.MeshBasicMaterial({color:0x2a0d0d}));mo.position.set(mx,my,mz);mo.scale.set(mw,.02,.03);par.add(mo);return{eyes,mo,mw,er}};
+const FC={soj:[.5,1.52,.3,.1,.1,0,.62,.41,.2],spi:[.5,1.52,.3,.1,.1,0,.62,.41,.2],opp:[.5,1.52,.3,.1,.1,0,.62,.41,.2],vik:[-.3,1.52,.2,.1,.1,0,.6,.57,.22],sur:[.05,.98,.28,.1,.1,0,.5,.17,.14],lrv:[.45,.82,.16,.07,.07,.45,.7,.12,.07],eag:[0,1.27,.48,.13,.1,0,.62,.72,.28],voy:[0,.35,-.45,.4,.22,0,-.45,-.5,.45]};
+const MD={soj:()=>rover(1),spi:()=>rover(0),opp:()=>rover(0),vik:viking,sur:surveyor,lrv,eag:eagle,a12:eagle,a14:eagle,a15:eagle,a16:eagle,a17:eagle,sv1:surveyor,vk2:viking};
+Object.assign(FC,{a12:FC.eag,a14:FC.eag,a15:FC.eag,a16:FC.eag,a17:FC.eag,sv1:FC.sur,vk2:FC.vik});
+const solar=()=>{const g=new T.Group();part(BX(1,.2,.9),gold,[0,.6,0],0,g);legs(g,3,.5,.55,gry,.5);for(const s of[-1,1])part(CY(.6,.6,.03,28),sb,[s*.95,.8,0],[0,0,s*.15],g);part(CY(.03,.03,.5,8),gry,[0,.95,.15],0,g);part(BX(.3,.14,.14),dk,[0,1.2,.15],0,g);part(BX(.6,.04,.04),gry,[.35,.55,.5],[0,.5,0],g);return g};
+MD.pho=MD.ins=solar;FC.pho=FC.ins=[0,1.2,.27,.1,.09,0,.6,.46,.25];
+const vm=()=>{const g=new T.Group();part(new T.SphereGeometry(1.8,24,8,0,6.2832,0,1.25),gry,[0,0,1.2],[-Math.PI/2,0,0],g);part(BX(1.4,1,1.4),gold,[0,0,-.7],0,g);part(CY(.05,.05,6),gry,[-3,0,-.8],[0,0,Math.PI/2],g);part(CY(.22,.22,2.6),gold,[2.4,0,-.8],[0,0,Math.PI/2],g);part(CY(.04,.04,7),gry,[0,-3.6,-.8],0,g);return g};
+for(const o of D){const d=MK[o.id],[b,r,s]=BD[d[0]],m=new T.Group(),v=d[0]=="v";let fc,fd;if(v){fc=mkFace(voy,...FC.voy);fc.md=voy}
+if(!v){const p=ll(d[1],d[2],r);m.position.copy(p);m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p.clone().normalize());const md=MD[o.id]();md.scale.setScalar(s);m.add(md);fc=mkFace(md,...FC[o.id]);fc.md=md}
+const h=new T.Mesh(new T.SphereGeometry(v?5:s*1.1,8,8),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));h.position.y=v?0:s*.5;h.userData.id=o.id;m.add(h);hits.push(h);
+b.add(m);Mk[o.id]={m,b,r,s,face:fc,z:o.z,c:chip(o.e+" "+o.n,()=>open_(o.id))}}
+const mc=chip("🌕 Moon",()=>go("Moon"));
+cv.addEventListener("pointerdown",e=>{drag=[e.clientX,e.clientY];dn=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(!drag)return;yaw-=(e.clientX-drag[0])*.006;pit=Math.max(-.6,Math.min(1.1,pit+(e.clientY-drag[1])*.004));drag=[e.clientX,e.clientY]});
+let pmx=0,pmy=0;addEventListener("pointermove",e=>{pmx=(e.clientX/innerWidth-.5)*2;pmy=-(e.clientY/innerHeight-.5)*2});
+cv.addEventListener("pointerup",e=>{const mv=dn?Math.hypot(e.clientX-dn[0],e.clientY-dn[1]):99;drag=null;if(mv<8&&cur)touch();else if(mv<8){const q=new T.Vector2(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1),rc2=new T.Raycaster();rc2.setFromCamera(q,C);const h=rc2.intersectObjects(hits)[0];if(h)open_(h.object.userData.id)}});
+const hs=(x,y)=>{const s=Math.sin(x*127.1+y*311.7)*43758.5453;return s-Math.floor(s)};
+const vn=(x,y)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);return hs(i,j)*(1-u)*(1-v)+hs(i+1,j)*u*(1-v)+hs(i,j+1)*(1-u)*v+hs(i+1,j+1)*u*v};
+const fbm=(x,y)=>{let a=.5,s=0;for(let o=0;o<5;o++){s+=a*vn(x,y);x*=2.03;y*=2.03;a*=.5}return s};
+let SF=null,inS=false,swp=0,cr=1,sa=.35;const SC={};
+const fade=document.createElement("div");fade.id="fade";document.body.appendChild(fade);
+function mkSurf(k){const sc=new T.Scene(),mo=k=="moon",mr=k=="mars";let dust=null;sc.environment=ENV;
+const sun=new T.DirectionalLight(mo?0xffffff:0xffe6c8,mo?2.6:2.2);sun.position.set(26,13,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);const sh=sun.shadow.camera;sh.left=sh.bottom=-16;sh.right=sh.top=16;sh.near=1;sh.far=120;sun.shadow.bias=-.0004;sc.add(sun);
+sc.add(mo?new T.AmbientLight(0x8899bb,.2):mr?new T.HemisphereLight(0xe8b078,0x4a2a1a,.75):new T.AmbientLight(0x6678aa,.14));
+const su=sp(0xfff2d0,mo?90:60);su.position.set(312,156,360);su.material.fog=false;sc.add(su);
+if(k!="space"){const CR=[];for(let i=0;i<16;i++){const a=rn()*6.28,r=34+rn()*140;CR.push([Math.cos(a)*r,Math.sin(a)*r,8+rn()*24])}
+const H=(x,z)=>{const w=Math.min(1,Math.max(0,(Math.hypot(x,z)-12)/38));let h=((fbm(x*.02,z*.02)-.45)*(mo?20:15)+(fbm(x*.18,z*.18)-.5)*.6)*w;for(const c of CR){const d=Math.hypot(x-c[0],z-c[1])/c[2];if(d<1)h-=(1-d*d)*c[2]*.2;else if(d<1.25)h+=Math.sin((1.25-d)/.25*Math.PI)*c[2]*.04}return h};
+const G=new T.PlaneGeometry(420,420,150,150);G.rotateX(-Math.PI/2);const P=G.attributes.position,cl=new Float32Array(P.count*3),b=mo?[.62,.61,.59]:[.72,.36,.2],dk=mo?[.28,.28,.3]:[.38,.16,.09];
+for(let i=0;i<P.count;i++){const x=P.getX(i),z=P.getZ(i);P.setY(i,H(x,z));const q=Math.min(1,fbm(x*.06,z*.06)*1.2+hs(Math.floor(x*4),Math.floor(z*4))*.15);for(let c=0;c<3;c++)cl[i*3+c]=dk[c]+(b[c]-dk[c])*q}
+G.setAttribute("color",new T.BufferAttribute(cl,3));G.computeVertexNormals();
+const gm=new T.Mesh(G,new T.MeshStandardMaterial({vertexColors:true,roughness:1,envMapIntensity:.15}));gm.receiveShadow=true;sc.add(gm);
+const RM=new T.InstancedMesh(new T.DodecahedronGeometry(1,0),new T.MeshStandardMaterial({color:mo?0x7d7a75:0x84503a,roughness:1,flatShading:true,envMapIntensity:.15}),170),du=new T.Object3D();
+for(let i=0;i<170;i++){const a=rn()*6.28,r=4+Math.pow(rn(),.7)*150,x=Math.cos(a)*r,z=Math.sin(a)*r,s=.12+Math.pow(rn(),3)*1.6;du.position.set(x,H(x,z)+s*.25,z);du.rotation.set(rn()*3,rn()*3,rn()*3);du.scale.set(s,s*(.5+rn()*.4),s*(.7+rn()*.5));du.updateMatrix();RM.setMatrixAt(i,du.matrix)}
+RM.castShadow=RM.receiveShadow=true;sc.add(RM)}
+if(mr){const sg2=new T.SphereGeometry(900,24,16),s2=sg2.attributes.position,c2=new Float32Array(s2.count*3);for(let i=0;i<s2.count;i++){const u=Math.pow(Math.max(0,s2.getY(i)/900),.55);c2.set([.86-.38*u,.62-.3*u,.45-.2*u],i*3)}sg2.setAttribute("color",new T.BufferAttribute(c2,3));sc.add(new T.Mesh(sg2,new T.MeshBasicMaterial({vertexColors:true,side:T.BackSide,fog:false})));sc.fog=new T.FogExp2(0xc99468,.0075);
+const dg=new Float32Array(900);for(let i=0;i<300;i++)dg.set([rn()*60-30,rn()*7,rn()*60-30],i*3);const dm=new T.BufferGeometry();dm.setAttribute("position",new T.BufferAttribute(dg,3));dust=new T.Points(dm,new T.PointsMaterial({color:0xd9a070,size:.14,transparent:true,opacity:.55,depthWrite:false}));sc.add(dust)}
+else{sc.add(new T.Points(sg,new T.PointsMaterial({color:0xffffff,size:1.8,sizeAttenuation:false,fog:false})));
+if(mo){const e=new T.Mesh(new T.SphereGeometry(40,32,32),new T.MeshBasicMaterial({map:earth.material.map}));e.position.set(-300,110,-420);sc.add(e);const g2=sp(0x4aa3ff,130);g2.position.copy(e.position);sc.add(g2)}
+else for(const n of[[0x3355ff,-300,120,-500,500],[0x9933ff,350,-80,-600,600],[0xff5533,100,250,-700,500]]){const s=sp(n[0],n[4]);s.position.set(n[1],n[2],n[3]);s.material.opacity=.25;sc.add(s)}}
+return{sc,dust}}
+function enterSurf(id){const o=D.find(x=>x.id==id),k=o.z=="Moon"?"moon":o.z=="Mars"?"mars":"space";SF=SC[k]||(SC[k]=mkSurf(k));if(SF.hero)SF.sc.remove(SF.hero);const g=new T.Group(),md=id=="voy"?vm():MD[id]();md.scale.setScalar(id=="voy"?.45:1.9);md.traverse(m=>{if(m.isMesh){m.castShadow=m.receiveShadow=true}});g.add(md);SF.f=mkFace(md,...FC[id]);SF.md=md;SF.hero=g;if(k=="space")g.position.y=1.5;SF.sc.add(g);cr=0;sa=.35}
+const wp=new T.Vector3(),dp=new T.Vector3(),dl=new T.Vector3(),lk=new T.Vector3(),ctr=new T.Vector3(),nn=new T.Vector3(),tm=new T.Vector3(),bs=new T.Vector3(),tt=new T.Vector3();
+C.position.set(0,70,160);
+const dir=(b,y,p)=>{const a=Math.atan2(b.x,b.z)+y;return new T.Vector3(Math.sin(a)*Math.cos(p),Math.sin(p),Math.cos(a)*Math.cos(p))};
+const wr=document.createElement("div");wr.id="warp";document.body.appendChild(wr);const cap=document.createElement("div");cap.id="cap";document.body.appendChild(cap);
+let key="",tw=0,td=2.5,trv=0,lift=0;const p0=new T.Vector3(),l0=new T.Vector3();
+const clk=new T.Clock();let ma=0;
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clk.getDelta(),.1),t=clk.elapsedTime;
+if(!focus){ma+=dt*.03;mars.rotation.y+=dt*.03}
+moon.position.set(Math.cos(ma)*18,0,Math.sin(ma)*18);moon.rotation.y=Math.PI-ma;
+earth.rotation.y+=dt*.04;cloud.rotation.y+=dt*.055;stars.rotation.y+=dt*.002;if(focus!="voy")voy.rotation.y+=dt*.1;
+if(focus){const k=Mk[focus],v=focus=="voy",dd=v?9:k.r*(k.b==moon?.9:.75);k.m.getWorldPosition(wp);k.b.getWorldPosition(ctr);nn.copy(wp).sub(ctr);if(v)nn.set(.5,.35,1);nn.normalize();
+if(v)dp.copy(wp).addScaledVector(nn,dd);else{tt.crossVectors(nn,tm.set(0,1,0));if(tt.lengthSq()<.01)tt.set(1,0,0);tt.normalize().applyAxisAngle(nn,.7+yaw);dp.copy(wp).addScaledVector(nn,dd*Math.max(.25,.3+pit)).addScaledVector(tt,dd)}
+dl.copy(wp).addScaledVector(nn,dd*.1);dl.y-=dd*.4}
+else{const tg=zone=="Moon"?moon.position:zone=="Mars"?mars.position:zone=="Deep Space"?voy.position:earth.position,ds={Earth:34,Moon:8,Mars:13,"Deep Space":16}[zone];
+if(zone=="Moon")bs.set(-moon.position.x,0,-moon.position.z);else bs.set(.3,0,1);
+dp.copy(tg).addScaledVector(dir(bs,yaw,pit),ds);dl.copy(tg);dl.y-=ds*.2}
+const kk=focus||zone;if(kk!=key){key=kk;tw=0;p0.copy(C.position);l0.copy(lk);const dist=p0.distanceTo(dp);td=Math.min(4.5,Math.max(2.2,dist*.04+1.8));lift=dist*.18;cap.textContent=focus?"Approaching "+D.find(o=>o.id==focus).n:"Travelling to "+zone}
+if(tw<1){tw=Math.min(1,tw+dt/td);const e=tw<.5?4*tw*tw*tw:1-Math.pow(-2*tw+2,3)/2;C.position.lerpVectors(p0,dp,e);C.position.y+=Math.sin(Math.PI*e)*lift;lk.lerpVectors(l0,dl,e);trv=Math.sin(Math.PI*e);C.fov=50+trv*26}
+else{const k2=1-Math.exp(-dt*4);C.position.lerp(dp,k2);lk.lerp(dl,k2);C.fov=50;trv=0}
+C.updateProjectionMatrix();C.lookAt(lk);wr.style.opacity=trv*.85;cap.style.opacity=trv>.05?1:0;
+for(const id in Mk){const k=Mk[id],f=k.face;if(!f)continue;const on=focus==id;
+const es=on&&!awake?.1:((t+k.r)%3.6<.12?.1:1);f.eyes.forEach(e=>e.scale.y+=(es-e.scale.y)*.4);
+f.mo.scale.y=f.mw*(.1+(on&&spk?Math.min(1,.15+amp+.3*Math.abs(Math.sin(t*13))):0)*.6);
+if(on){let a;if(id=="voy")a=Math.atan2(C.position.x-voy.position.x,C.position.z-voy.position.z);else{tm.copy(C.position);k.m.worldToLocal(tm);a=Math.atan2(tm.x,tm.z)}
+let d=a-f.md.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));f.md.rotation.y+=d*(1-Math.exp(-dt*5));
+hop=Math.max(0,hop-dt*1.6);if(id!="voy")f.md.position.y=k.s*(Math.sin(Math.PI*(1-hop))*.5+(spk?Math.abs(Math.sin(t*9))*.05:0))}}
+amp*=.9;
+if(focus&&!inS&&!swp&&tw>=.85&&Mk[focus]){swp=1;fade.style.opacity=1;setTimeout(()=>{if(focus){enterSurf(focus);inS=true}swp=0;fade.style.opacity=0},380)}
+if(!focus&&inS){inS=false;fade.style.opacity=1;setTimeout(()=>{fade.style.opacity=0},80)}
+if(inS&&SF){cr=Math.min(1,cr+dt/3.2);const e=1-Math.pow(1-cr,3),sd0=focus=="voy"?11:8.5,sd=sd0+(26-sd0)*(1-e),el=Math.max(.04,Math.min(1.3,.2+.65*(1-e)+(pit-.15)*.5));if(!awake)sa+=dt*.08;const az=sa+yaw;
+C2.position.set(Math.sin(az)*Math.cos(el)*sd,Math.sin(el)*sd+1.3,Math.cos(az)*Math.cos(el)*sd);C2.lookAt(0,1.5-sd*.075,0);
+const f=SF.f,md=SF.md,es=!awake?.1:(t%3.6<.12?.1:1);f.eyes.forEach(q=>{q.scale.y+=(es-q.scale.y)*.4;const p=q.children[1];p.position.x+=(pmx*f.er*.3-p.position.x)*.2;p.position.y+=(pmy*f.er*.3-p.position.y)*.2});f.mo.scale.y=f.mw*(.1+(spk?Math.min(1,.15+amp+.3*Math.abs(Math.sin(t*13))):0)*.6);
+let d=Math.atan2(C2.position.x-SF.hero.position.x,C2.position.z-SF.hero.position.z)-md.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));md.rotation.y+=d*(1-Math.exp(-dt*5));
+md.position.y=(Math.sin(Math.PI*(1-hop))*.5+(spk?Math.abs(Math.sin(t*9))*.05:0))*1.3;
+if(SF.dust){const a=SF.dust.geometry.attributes.position;for(let i=0;i<a.count;i++){let x=a.getX(i)+dt*2.2;if(x>30)x=-30;a.setX(i,x)}a.needsUpdate=true}}
+const W=innerWidth,H=innerHeight,st=document.getElementById("stage"),rc=st&&st.getBoundingClientRect();
+const show=(c,ok,sw)=>{if(ok){tm.copy(wp).project(C);const x=(tm.x+1)/2*W,y=(1-tm.y)/2*H;ok=tm.z<1&&y>rc.top-20&&y<rc.bottom-8&&x>20&&x<W-20;if(ok){c.style.left=x+"px";c.style.top=y+"px"}}c.style.display=ok?"block":"none"};
+for(const id in Mk){const k=Mk[id];k.m.getWorldPosition(wp);let ok=!!rc&&!cur&&k.z==zone;
+if(ok&&id!="voy"){k.b.getWorldPosition(ctr);nn.copy(wp).sub(ctr);ok=nn.dot(tm.copy(C.position).sub(wp))>0}show(k.c,ok)}
+moon.getWorldPosition(wp);show(mc,!!rc&&!cur&&zone=="Earth");
+R.render(inS&&SF?SF.sc:S,inS&&SF?C2:C)}
+loop();
+}catch(e){console.error(e)}
+const SV={xp:0,b:{}};try{Object.assign(SV,JSON.parse(localStorage.getItem("eos")||"{}"))}catch(e){}
+function award(x,b){SV.xp+=x;if(b)SV.b[b]=1;try{localStorage.setItem("eos",JSON.stringify(SV))}catch(e){}gxp()}
+const BDG={land:"🛬 Soft Lander",mars:"🔴 Mars Lander",storm:"🌪️ Storm Survivor"};
+function gxp(){const e=$("#gxp");if(e)e.textContent="⭐ "+SV.xp+" XP "+Object.keys(SV.b).map(k=>BDG[k]||"").join(" ")}
+const DM=["Land on the Moon with under 1 m/s vertical speed.","Land on Mars (3.71 m/s²) with more than 40% fuel left.","Survive the dust storm with at least 120 science points.","Try Earth gravity: can you even slow down?"],dm=DM[Math.floor(Date.now()/864e5)%DM.length];
+let gm=null,gloop=0,LG2=1.62;
+function games(f){if(!gm){gm=document.createElement("div");gm.id="gm";document.body.appendChild(gm)}gm.style.display="block";hub();if(!f&&location.hash!="#games")location.hash="games"}
+function hideG(){cancelAnimationFrame(gloop);document.onkeydown=document.onkeyup=null;if(location.hash=="#games")history.replaceState(null,"",location.pathname+location.search);if(gm)gm.style.display="none"}
+function gclose(){if(location.hash=="#games")history.back();else hideG()}
+function hub(){cancelAnimationFrame(gloop);gm.innerHTML=`<div class=gh><button onclick="gclose()">✕</button><b>🎮 Mission Control</b><span id=gxp></span></div><div class=gb><div class=card><b>📅 Daily mission</b><p>${dm}</p></div><div class=card><b>🛬 Lunar Lander</b><p>Land Eagle softly. Pick the world (Moon, Mars or Earth) and feel how gravity changes the fuel you need.</p><button onclick="lander()">Play</button></div><div class=card><b>🌪️ Save the Rover</b><p>A global dust storm is blocking the sunlight. Plan your power for 60 sols to keep a Mars rover alive, like Opportunity in 2018. Simplified model.</p><button onclick="storm()">Play</button></div><div class=card><b>📊 Insights & Compare</b><p>Scrub through 1960 to 2026 to see which machines were alive, compare planned vs real lifetimes, feel the distances, and compare two machines.</p><button onclick="ins()">Open</button></div><div class=card><b>🏫 Class Leaderboard</b><p>Join your class with a code and compare XP with classmates. Needs the Supabase setup (see README).</p><button onclick="board()">Open</button></div></div>`;gxp()}
+function lander(){cancelAnimationFrame(gloop);gm.innerHTML=`<div class=gh><button onclick="hub()">←</button><b>🛬 Lunar Lander</b><span id=gxp></span></div><div class=gb><div class=row>${[["Moon",1.62],["Mars",3.71],["Earth",9.81]].map(w=>`<button class="${LG2==w[1]?"on":""}" onclick="LG2=${w[1]};lander()">${w[0]} ${w[1]} m/s²</button>`).join("")}</div><canvas id=cv2 width=360 height=480></canvas><div class=ctl><button id=bL>◀ Left</button><button id=bT>🔥 Thrust OFF</button><button id=bR>Right ▶</button></div><div id=gr class=card>Land on the green pad: under 3 m/s down and under 1.5 m/s sideways. Tap Thrust to turn the engine on or off. Tap Left or Right for short pushes. Fuel is limited.</div></div>`;gxp();
+const g=$("#cv2").getContext("2d"),W=360,H=480,GR=LG2,TH=6.2,sc=(H-50)/760,st=[];for(let i=0;i<60;i++)st.push([Math.random()*W,Math.random()*(H-80),Math.random()*1.3+.3]);
+let s={x:-130,y:700,vx:6,vy:-20,f:100,end:0},k={L:0,T:0,R:0},th=0,t0=performance.now();
+const kt=(n,ms)=>{k[n]=1;setTimeout(()=>k[n]=0,ms)};$("#bL").onclick=()=>kt("L",300);$("#bR").onclick=()=>kt("R",300);$("#bT").onclick=()=>{k.T=k.T?0:1;$("#bT").textContent=k.T?"🔥 Thrust ON":"🔥 Thrust OFF"};document.onkeydown=e=>{if(e.key=="ArrowUp")k.T=1;if(e.key=="ArrowLeft")k.L=1;if(e.key=="ArrowRight")k.R=1};document.onkeyup=e=>{if(e.key=="ArrowUp")k.T=0;if(e.key=="ArrowLeft")k.L=0;if(e.key=="ArrowRight")k.R=0};
+const X=x=>W/2+x*.9,Y=y=>H-40-y*sc;
+function fin(w){s.end=1;const v=Math.abs(s.vy),h=Math.abs(s.vx),ok=!w&&v<3&&h<1.5&&Math.abs(s.x)<=25;let m;if(ok){const xp=50+Math.round(s.f/2)+(GR>3?30:0);award(xp,GR>3?"mars":"land");m=`✅ Touchdown! ${v.toFixed(1)} m/s down, ${h.toFixed(1)} m/s sideways, ${Math.round(s.f)}% fuel left. +${xp} XP`}else m=`💥 Crash. ${w?"You drifted off the landing zone.":Math.abs(s.x)>25?"You missed the landing pad.":"Too fast: "+v.toFixed(1)+" m/s down, "+h.toFixed(1)+" m/s sideways. Safe is under 3 and 1.5."}`;
+$("#gr").innerHTML=`<b>${m}</b><p>🧪 Physics: gravity here pulls at ${GR} m/s². Your engine gives ${TH} m/s²${TH<GR?", less than gravity, so you can slow down but never hover":", more than gravity, so thrust wins"}. Less gravity means less fuel to land.</p><button onclick="lander()">Try again</button>`;gxp()}
+function step(now){const dt=Math.min(.05,(now-t0)/1000);t0=now;th=0;
+if(!s.end){th=k.T&&s.f>0;const sd=(k.R||k.L)&&s.f>0;s.vy+=(-GR+(th?TH:0))*dt;s.vx+=(k.R-k.L)*(s.f>0?3:0)*dt;s.f=Math.max(0,s.f-(th?1.4:0)*dt-(sd?.5:0)*dt);s.x+=s.vx*dt;s.y+=s.vy*dt;if(s.y<=0){s.y=0;fin()}else if(Math.abs(s.x)>210)fin("off")}
+g.fillStyle="#050816";g.fillRect(0,0,W,H);st.forEach(p=>{g.fillStyle="rgba(255,255,255,"+(.4+p[2]/2)+")";g.fillRect(p[0],p[1],p[2],p[2])});
+if(GR<2){g.fillStyle="#2a6fd6";g.beginPath();g.arc(290,60,22,0,7);g.fill();g.fillStyle="rgba(255,255,255,.35)";g.beginPath();g.arc(284,54,10,0,7);g.fill()}
+const gg=g.createLinearGradient(0,H-40,0,H);gg.addColorStop(0,GR>5?"#2f6b3a":GR>3?"#9a5a3a":"#a8a8a8");gg.addColorStop(1,"#3a3a3a");g.fillStyle=gg;g.fillRect(0,H-40,W,40);g.fillStyle="#35d07f";g.fillRect(X(-25),H-42,X(25)-X(-25),4);
+const px=X(s.x),py=Y(s.y);g.save();g.translate(px,py);if(th){g.fillStyle="#ffb347";g.beginPath();g.moveTo(-6,0);g.lineTo(6,0);g.lineTo(0,18+Math.random()*10);g.fill()}
+g.strokeStyle="#ddd";g.lineWidth=2;g.beginPath();g.moveTo(-8,-8);g.lineTo(-16,0);g.moveTo(8,-8);g.lineTo(16,0);g.stroke();g.fillStyle="#c9a24a";g.fillRect(-9,-16,18,10);g.fillStyle="#cfd3dc";g.fillRect(-6,-26,12,10);g.fillStyle="#1d1f26";g.fillRect(-3,-23,6,4);g.restore();
+g.font="12px monospace";g.fillStyle="#fff";g.fillText("ALT "+Math.max(0,s.y).toFixed(0)+" m",8,16);g.fillStyle=Math.abs(s.vy)>3?"#ff6b6b":"#5ee08a";g.fillText("V-SPEED "+s.vy.toFixed(1)+" m/s",8,32);g.fillStyle=Math.abs(s.vx)>1.5?"#ff6b6b":"#5ee08a";g.fillText("H-SPEED "+s.vx.toFixed(1)+" m/s",8,48);g.fillStyle="#fff";g.fillText("FUEL",8,64);g.fillRect(44,56,s.f*.8,8);
+gloop=requestAnimationFrame(step)}
+gloop=requestAnimationFrame(step)}
+function storm(){cancelAnimationFrame(gloop);const N=60,CAP=800,C=[180,60,25];let sol=0,bat=700,dust=.9,pts=0,hist=[],dead=0;
+const tau=n=>.6+10.4*Math.exp(-Math.pow((n-28)/10,2)),gen=n=>Math.round(620*Math.exp(-tau(n)*.52)*dust);
+gm.innerHTML=`<div class=gh><button onclick="hub()">←</button><b>🌪️ Save the Rover</b><span id=gxp></span></div><div class=gb><canvas id=cv3 width=360 height=190></canvas><div id=ss class=card></div><div class=ctl><button onclick="A3(0)">🔬 Science<br>−180 Wh</button><button onclick="A3(1)">📡 Standby<br>−60 Wh</button><button onclick="A3(2)">😴 Hibernate<br>−25 Wh</button></div><div id=gr class=card>Each sol (Mars day) choose how much power to spend. A storm is coming. Bars show your battery, the orange line shows how dark the sky is (tau).</div></div>`;gxp();
+const g=$("#cv3").getContext("2d");
+function upd(){const f=[0,1,2].map(i=>gen(sol+i)).join(", ");$("#ss").innerHTML=`<b>Sol ${sol}/${N}</b> · 🔋 ${Math.round(bat)} Wh · ⭐ ${pts} science points<br>☀️ Sunlight today: <b>${gen(sol)} Wh</b> · forecast next sols: ${f} Wh · sky tau ${tau(sol).toFixed(1)}`;
+g.fillStyle="#050816";g.fillRect(0,0,360,190);const bw=360/N;hist.forEach((h,i)=>{g.fillStyle=h[0]<150?"#ff6b6b":"#5ee08a";const bh=Math.max(1,h[0]/CAP*170);g.fillRect(i*bw,180-bh,bw-1,bh)});g.strokeStyle="#ffb347";g.beginPath();for(let i=0;i<N;i++){const y=180-tau(i)/12*170;i?g.lineTo(i*bw+bw/2,y):g.moveTo(bw/2,y)}g.stroke()}
+window.A3=c=>{if(dead||sol>=N)return;const E=gen(sol);bat=Math.min(CAP,bat+E-C[c]);pts+=[10,1,0][c];hist.push([Math.max(0,bat),tau(sol)]);if(Math.random()<.06)dust=Math.min(.95,dust+.25);dust=Math.max(.4,dust-.004);sol++;upd();
+if(bat<=0){dead=1;$("#gr").innerHTML=`<b>🩻 Battery empty on sol ${sol}.</b> The rover froze and fell silent. In June 2018 a real dust storm did this to Opportunity: its last signal came on 10 June 2018.<p>🧪 Lesson: when sunlight drops, hibernate early and keep the battery for the heaters.</p><button onclick="storm()">Try again</button>`}
+else if(sol>=N){const xp=40+Math.round(pts/2);award(xp,"storm");$("#gr").innerHTML=`<b>🎉 You survived the storm!</b> The sky cleared and your rover woke up with ${Math.round(bat)} Wh and ${pts} science points. +${xp} XP<p>🧪 Physics: solar power falls roughly exponentially as dust (tau) rises.</p><button onclick="storm()">Play again</button>`}};
+upd()}
+const yr2=o=>{const m=o.y.match(/\d{4}/g)||[];return[+m[0],/now/i.test(o.y)?2026:+(m[1]||m[0])]};
+const ZC={Moon:"#b8bcc6",Mars:"#e0704a","Deep Space":"#7aa2ff"};
+const LT=[["Sojourner",7,85],["Phoenix",92,161],["Spirit",92,2271],["Opportunity",92,5251],["Viking 1",92,2306],["InSight",686,1486],["Voyager 1",1461,17950]];
+const DS=[["🛰️ Space station",400],["🌕 Moon",384400],["🔴 Mars, closest ever",54600000],["🔴 Mars, average",225000000],["🛸 Voyager 1, about 1 light-day",25900000000]];
+const tm2=s=>s<60?Math.round(s)+" seconds":s<3600?(s/60).toFixed(1)+" minutes":s<86400?(s/3600).toFixed(1)+" hours":(s/86400).toFixed(1)+" days";
+const car=km=>{const h=km/100;return h<48?h.toFixed(0)+" hours":h<8760?Math.round(h/24)+" days":Math.round(h/8760).toLocaleString()+" years"};
+let iy=1969,id2=1,CA=0,CB=5;
+function tl(){$("#yv").textContent=iy;const L=D.map(o=>[o,...yr2(o)]).sort((a,b)=>a[1]-b[1]),on=L.filter(x=>x[1]<=iy&&iy<=x[2]);
+$("#tl").innerHTML=`<p>${on.length?"Active in "+iy+": "+on.map(x=>x[0].e+" "+x[0].n).join(", "):"None of our machines were active in "+iy+"."}</p>`+L.map(x=>{const a=(x[1]-1960)/66*100,w=Math.max(1.2,(x[2]-x[1])/66*100),act=x[1]<=iy&&iy<=x[2];return `<div style="margin:6px 0;cursor:pointer" onclick="hideG();open_('${x[0].id}')"><small>${x[0].e} ${x[0].n} · ${x[0].y}</small><div style="position:relative;height:10px;background:#1b2350;border-radius:6px"><i style="position:absolute;left:${a}%;width:${w}%;height:100%;border-radius:6px;background:${ZC[x[0].z]};opacity:${act?1:.35}"></i><i style="position:absolute;left:${(iy-1960)/66*100}%;width:2px;height:100%;background:#fff"></i></div></div>`}).join("")}
+function ins(t){t=t||"time";const T=[["time","⏳ Timeline"],["life","📏 Lifetime"],["dist","🌌 Distance"],["cmp","⚖️ Compare"]];
+gm.innerHTML=`<div class=gh><button onclick="hub()">←</button><b>📊 Insights</b></div><div class=gb><div class=row>${T.map(x=>`<button class="${x[0]==t?"on":""}" onclick="ins('${x[0]}')">${x[1]}</button>`).join("")}</div><div id=ib></div></div>`;const b=$("#ib");
+if(t=="time"){b.innerHTML=`<div class=card><b>Year: <span id=yv></span></b><p><small>Drag the slider. Tap a bar to meet that machine. ${D.filter(o=>/now/i.test(o.y)).length} of our ${D.length} relics are still talking to Earth.</small></p><input type=range min=1960 max=2026 value=${iy} style="width:100%" oninput="iy=+this.value;tl()"><div id=tl></div></div>`;tl()}
+if(t=="life"){const mx=Math.log10(17950);b.innerHTML=`<div class=card><b>Planned vs real lifetime</b><p><small>Engineers planned short missions, but many machines kept working far longer. Bars use a log scale. Numbers are approximate Earth days.</small></p>${LT.map(x=>`<div style="margin:10px 0"><b>${x[0]}</b> <small>×${(x[2]/x[1]).toFixed(1)} longer than planned</small><div style="height:8px;margin:3px 0;border-radius:5px;background:#7aa2ff;width:${Math.max(3,Math.log10(x[1])/mx*100)}%"></div><div style="height:8px;border-radius:5px;background:#ffb347;width:${Math.max(3,Math.log10(x[2])/mx*100)}%"></div><small>planned ≈ ${x[1].toLocaleString()} d · actual ≈ ${x[2].toLocaleString()} d</small></div>`).join("")}<small>🔵 planned · 🟠 actual</small></div>`}
+if(t=="dist"){const x=DS[id2];b.innerHTML=`<div class=card><b>How far is it?</b><div class=row>${DS.map((d,i)=>`<button class="${i==id2?"on":""}" onclick="id2=${i};ins('dist')">${d[0]}</button>`).join("")}</div><p>Distance from Earth: <b>${x[1].toLocaleString()} km</b></p><p>📡 A radio signal needs <b>${tm2(x[1]/299792)}</b> one way.</p><p>🚗 A car at 100 km/h would need <b>${car(x[1])}</b>.</p></div>`}
+if(t=="cmp"){const opt=i=>D.map((o,k)=>`<option value=${k} ${k==i?"selected":""}>${o.e} ${o.n}</option>`).join("");b.innerHTML=`<div class=card><div class=row><select onchange="CA=+this.value;ins('cmp')">${opt(CA)}</select><select onchange="CB=+this.value;ins('cmp')">${opt(CB)}</select></div>${[D[CA],D[CB]].map(o=>`<p><b>${o.e} ${o.n}</b><br>📍 ${o.z} · ⏳ ${o.y}<br>⚙️ ${o.C.map(c=>c[0]).join(", ")}<br>🏁 ${o.P[2]}</p>`).join("<hr>")}</div>`}}
+const TK={soj:{n:"Checked: Pathfinder's last successful data transmission was on 27 September 1997 (sol 83). Sojourner was designed to work for 7 days and operated about 12 times longer.",l:[["NASA JPL: Mars Pathfinder winds down","https://www.jpl.nasa.gov/news/mars-pathfinder-winds-down-after-phenomenal-mission/"],["NASA JPL: Sojourner's first images","https://www.jpl.nasa.gov/images/sojourners-first-images-from-mars"]]},
+spi:{s:1,n:"Checked against news reports (a NASA page is not linked yet): Spirit got stuck in soft sand in 2009, last communicated on 22 March 2010, and NASA ended recovery attempts in May 2011.",l:[["Spaceflight Now: NASA closes book on Spirit","https://spaceflightnow.com/news/n1105/24spirit"],["Space.com: Spirit rover","https://www.space.com/amp/18766-spirit-rover.html"]]},
+a12:{n:"Checked: Intrepid landed on 19 November 1969 in the Ocean of Storms, about 180 m (600 ft) from Surveyor 3.",l:[["NASA Moon: Man and Machine","https://moon.nasa.gov/resources/31"]]},
+sur:{n:"Checked: Surveyor 3 landed in the Ocean of Storms on 20 April 1967. Apollo 12 astronauts visited it in 1969.",l:[["NASA: Apollo 12, Surveyor 3 and Intrepid","https://science.nasa.gov/image-article/apod-1999-april-08-apollo-12-surveyor-3-and-intrepid/"],["NASA Moon: Man and Machine","https://moon.nasa.gov/resources/31"]]},
+opp:{n:"Checked: last communication on 10 June 2018 during a global dust storm; NASA ended the mission in February 2019 after almost 15 years on Mars.",l:[["NASA JPL: Opportunity mission comes to end","https://www.jpl.nasa.gov/news/nasas-opportunity-rover-mission-on-mars-comes-to-end/"]]},
+voy:{n:"Checked: launched 5 September 1977; reaches 1 light-day (about 25.9 billion km) from Earth on 18 November 2026; still in contact, with most instruments off to save power.",l:[["NASA JPL release (via ScienceDaily)","https://www.sciencedaily.com/releases/2026/11/261103003152.htm"],["EarthSky: Voyager 1 one light-day","https://earthsky.org/space/voyager-1-1-light-day-from-earth-november-17-18-2026/"]]}};
+function truth(o){const t=TK[o.id];return `<div class=card><b>${t?(t.s?"🟡 Truth Check: checked against news sources":"✅ Truth Check: key facts verified"):"⚠️ Truth Check: not verified yet"}</b><p>${t?t.n:"These facts come from the project team's notes and are not yet checked against NASA sources. Check NASA mission pages before presenting."}</p>${t?t.l.map(x=>`<a href="${x[1]}" target="_blank" rel="noopener" style="color:var(--acc)">${x[0]} ↗</a>`).join("<br>"):""}</div>`}
+const SB=window.EOS_SUPABASE||{},lsg=k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}},esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m])),sbh={apikey:SB.key,Authorization:"Bearer "+SB.key,"Content-Type":"application/json"};
+function board(){gm.innerHTML=`<div class=gh><button onclick="hub()">←</button><b>🏫 Class Leaderboard</b><span id=gxp></span></div><div class=gb><div class=card>${SB.url?`<p><small>Share your class code with classmates. Only a nickname and your XP are stored.</small></p><div class=row><input id=cc placeholder="Class code, e.g. 9B-SPACE" value="${esc(lsg("eos_cc"))}" style="flex:1;min-width:0;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1230;color:var(--ink)"><input id=nn placeholder="Nickname" value="${esc(lsg("eos_nn"))}" style="flex:1;min-width:0;font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:#0b1230;color:var(--ink)"></div><div class=row><button onclick="bsave()">Submit my XP (${SV.xp})</button><button onclick="bload()">Refresh</button></div><div id=bl></div>`:`<b>Needs a backend</b><p>The class leaderboard runs in the GitHub Pages build with a free Supabase project. Steps are in the README.</p>`}</div></div>`;gxp();if(SB.url&&lsg("eos_cc"))bload()}
+async function bload(){const c=($("#cc").value||"").trim().toUpperCase();if(!c)return;$("#bl").textContent="Loading…";try{const r=await fetch(SB.url+"/rest/v1/scores?class_code=eq."+encodeURIComponent(c)+"&select=nick,xp&order=xp.desc&limit=20",{headers:sbh});if(!r.ok)throw new Error(r.status);const a=await r.json();$("#bl").innerHTML=a.length?a.map((x,i)=>`<p>${["🥇","🥈","🥉"][i]||(i+1)+"."} <b>${esc(x.nick)}</b> · ⭐ ${x.xp}</p>`).join(""):"No scores yet. Be the first!"}catch(e){$("#bl").textContent="Could not load: "+e.message}}
+async function bsave(){const c=$("#cc").value.trim().toUpperCase(),n=$("#nn").value.trim().slice(0,20);if(!c||!n){$("#bl").textContent="Enter a class code and a nickname.";return}try{localStorage.setItem("eos_cc",c);localStorage.setItem("eos_nn",n)}catch(e){}try{const r=await fetch(SB.url+"/rest/v1/scores?on_conflict=class_code,nick",{method:"POST",headers:{...sbh,Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({class_code:c,nick:n,xp:SV.xp,badges:Object.keys(SV.b).length})});if(!r.ok)throw new Error(r.status);bload()}catch(e){$("#bl").textContent="Could not save: "+e.message}}
+zone="Earth";
+home();
+addEventListener("hashchange",()=>{const id=location.hash.slice(1);if(id=="games"){if(!gm||gm.style.display!="block")games(true);return}if(gm&&gm.style.display=="block")hideG();if(D.find(o=>o.id==id)){if(!cur||cur.id!=id)openRaw(id)}else if(cur){pushed=false;home()}});
+</script></body></html>
